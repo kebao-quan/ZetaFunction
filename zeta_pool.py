@@ -10,8 +10,6 @@ import numpy as np
 import time
 import os
 from decimal import *
-from multiprocessing import Process
-from multiprocessing import Queue
 from multiprocessing import Pool
 # def primelist(max):
 # 	pl=[2]
@@ -50,9 +48,9 @@ def N(l,primeList,power):
 	if l <= 10**9:
 		maxterm = 11
 	if l <= 10**8:
-		maxterm = 10
+		maxterm = 9 #correct
 	if l <= 10**7:
-		maxterm = 9
+		maxterm = 9 #correct
 
 
 
@@ -92,7 +90,7 @@ def NtermRecursive(l,primeIndices,primeList,power,term):
 		return (math.floor(l/product(primeIndices,primeList)))**power
 
 	sum=0
-	if i==0:
+	if i==0 and primelimit >= 1:
 		while True:
 			primeIndices[0]+=1
 
@@ -101,7 +99,8 @@ def NtermRecursive(l,primeIndices,primeList,power,term):
 
 			sum+=NtermRecursive(l,[*primeIndices],primeList,power,term)
 		return sum
-	if i==1:
+
+	if i==1 and primelimit >= 2:
 		while True:
 			primeIndices[1]+=1
 
@@ -113,7 +112,8 @@ def NtermRecursive(l,primeIndices,primeList,power,term):
 
 			sum+=NtermRecursive(l,[*primeIndices],primeList,power,term)
 		return sum
-	if i==2:
+
+	if i==2 and primelimit >= 3:
 		while True:
 			primeIndices[2]+=1
 
@@ -125,30 +125,44 @@ def NtermRecursive(l,primeIndices,primeList,power,term):
 
 			sum+=NtermRecursive(l,[*primeIndices],primeList,power,term)
 		return sum
-	# if i==3:
-	# 	while True:
-	# 		primeIndices[3]+=1
 
-	# 		if primeIndices[3]>=primeIndices[2]:
-	# 			break
-
-	# 		if primeList[primeIndices[3]]*primeList[primeIndices[2]]*primeList[primeIndices[1]]*primeList[primeIndices[0]] > (l/leastPrimeProduct(term-4,primeList)):
-	# 			break
-
-	# 		sum+=NtermRecursive(l,[*primeIndices],primeList,power,term)
-	# 	return sum
-	else:
+	if i==3 and primelimit >= 4:
 		while True:
-			primeIndices[i]+=1
+			primeIndices[3]+=1
 
-			if primeIndices[i]>=primeIndices[i-1]:
+			if primeIndices[3]>=primeIndices[2]:
 				break
 
-			if product(primeIndices[:i+1],primeList)>l:
+			if primeList[primeIndices[3]]*primeList[primeIndices[2]]*primeList[primeIndices[1]]*primeList[primeIndices[0]] > (l/leastPrimeProduct(term-4,primeList)):
 				break
 
 			sum+=NtermRecursive(l,[*primeIndices],primeList,power,term)
 		return sum
+
+	if i==4 and primelimit >= 5:
+		while True:
+			primeIndices[4]+=1
+
+			if primeIndices[4]>=primeIndices[3]:
+				break
+
+			if primeList[primeIndices[4]]*primeList[primeIndices[3]]*primeList[primeIndices[2]]*primeList[primeIndices[1]]*primeList[primeIndices[0]] > (l/leastPrimeProduct(term-5,primeList)):
+				break
+
+			sum+=NtermRecursive(l,[*primeIndices],primeList,power,term)
+		return sum
+
+	while True:
+		primeIndices[i]+=1
+
+		if primeIndices[i]>=primeIndices[i-1]:
+			break
+
+		if product(primeIndices[:i+1],primeList)>l:
+			break
+
+		sum+=NtermRecursive(l,[*primeIndices],primeList,power,term)
+	return sum
 
 def leastPrimeProduct(n,primeList):
     p=1
@@ -171,7 +185,10 @@ def product(primeIndices,primeList):
 
 
 
-L = 10**7
+L = 10**10
+power = 2
+
+primelimit = 2					#the number of prime to restrict
 loadPrimeList = False 			#set this to True if you want to use existing primeList
 StorePrimeLocal = False			#set this to True if you want to save the primeList
 
@@ -193,8 +210,8 @@ if __name__ == '__main__':
 					fp.write("%s " % item)
 
 	start_time = time.time()
-	print("timer start!")
-	result = NPioverL(L,primeList,2)
+	print("timer start! Computing L =", L, "  ---  power =", power, "  ---  Limit prime =", primelimit, "......")
+	result = NPioverL(L,primeList,power)
 	print("result: ", Decimal(result))
 	print("--- %s seconds --- for getting the result" % (time.time() - start_time))
 	print("timer end!")
