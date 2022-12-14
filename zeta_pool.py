@@ -10,7 +10,7 @@ import numpy as np
 import time
 import os
 from decimal import *
-from multiprocessing import Pool
+from multiprocessing import Pool, RawArray
 # def primelist(max):
 # 	pl=[2]
 # 	i=3
@@ -36,12 +36,17 @@ def primelist(max):
     return np.r_[2,3,((3*np.nonzero(sieve)[0][1:]+1)|1)]
 
 
-def NPioverL(l,primeList,power):
-    return N(l,primeList,power)*(math.pi**power)/(l**power)
+def NPioverL(l, power):
+    return N(l,power)*(math.pi**power)/(l**power)
 
+Prime_dict = {}
+def init_worker(primeListRaw_, X_shape):
+    Prime_dict["X"] = primeListRaw_
+    Prime_dict["X_shape"] = X_shape
+    
+    
 
-
-def N(l,primeList,power):
+def N(l,power):
 	maxterm = 15
 	if l <= 10**10:
 		maxterm = 12
@@ -51,21 +56,18 @@ def N(l,primeList,power):
 		maxterm = 9 #correct
 	if l <= 10**7:
 		maxterm = 9 #correct
-
-
-
 	term=1
 	sign=-1
 	sum=l**power
 
 	function_args = []
 	while term < maxterm:
-		function_args.append((l,primeList,term,power))
+		function_args.append((l,term,power))
 		term+=1
  
-	p = Pool(os.cpu_count())
-	rets = p.map(Nterm, function_args)
-	p.close()
+	with Pool(processes=os.cpu_count(),initializer=init_worker, initargs=(PrimeListRaw_a, X_shape)) as p:
+		rets = p.map(Nterm, function_args)
+		p.close()
 
 	rets.sort(reverse=True)
 	for value in rets:
@@ -75,11 +77,15 @@ def N(l,primeList,power):
 	return sum
 
 def Nterm(args):
-    l,primeList,term,power = args
-    del args
-    primeIndices=[-1]*term
-    ret = NtermRecursive(l,primeIndices,primeList,power,term)
-    return ret
+    
+	X_np = np.frombuffer(Prime_dict['X']).reshape(Prime_dict['X_shape'])
+	prime_list = X_np.ravel()
+    
+	l,term,power = args
+	del args
+	primeIndices=[-1]*term
+	ret = NtermRecursive(l,primeIndices,prime_list,power,term)
+	return ret
 
 def NtermRecursive(l,primeIndices,primeList,power,term):
 	i=0
@@ -185,33 +191,41 @@ def product(primeIndices,primeList):
 
 
 
-L = 10**10
+L = 10**8
 power = 2
 
+
+primeList_ = primelist(L+10000)
+X_shape = (1, len(primeList_))
+primeList_1 = np.reshape(primeList_, X_shape)
+PrimeListRaw_a = RawArray('Q', len(primeList_))
+
+X_np = np.frombuffer(PrimeListRaw_a).reshape(X_shape)
+np.copyto(X_np, primeList_1)
+
 primelimit = 2					#the number of prime to restrict
-loadPrimeList = False 			#set this to True if you want to use existing primeList
-StorePrimeLocal = False			#set this to True if you want to save the primeList
+# loadPrimeList = False 			#set this to True if you want to use existing primeList
+# StorePrimeLocal = False			#set this to True if you want to save the primeList
 
 if __name__ == '__main__':
-	print("maximum threads: ", os.cpu_count())
-	if loadPrimeList:
-		with open(r'PrimeList.txt', 'r') as fp:
-			primeList = list(map(int, fp.readline().split()))
-		print("read PrimeList.txt complete")
-	else:
-		start_time = time.time()
-		primeList = primelist(L+10000)
-		print("--- %s seconds --- for getting the prime list" % (time.time() - start_time))
-		print("len of primeList: ", len(primeList))
-		print("------------------------------------------------\n")
-		if StorePrimeLocal:
-			with open(r'PrimeList.txt', 'w') as fp:
-				for item in primeList:
-					fp.write("%s " % item)
+# 	print("maximum threads: ", os.cpu_count())
+# 	if loadPrimeList:
+# 		with open(r'PrimeList.txt', 'r') as fp:
+# 			primeList_ = list(map(int, fp.readline().split()))
+# 		print("read PrimeList.txt complete")
+# 	else:
+# 		start_time = time.time()
+# 		print("--- %s seconds --- for getting the prime list" % (time.time() - start_time))
+# 		print("len of primeList: ", len(primeList_))
+# 		print("------------------------------------------------\n")
+# 		if StorePrimeLocal:
+# 			with open(r'PrimeList.txt', 'w') as fp:
+# 				for item in primeList_:
+# 					fp.write("%s " % item)
 
 	start_time = time.time()
 	print("timer start! Computing L =", L, "  ---  power =", power, "  ---  Limit prime =", primelimit, "......")
-	result = NPioverL(L,primeList,power)
+	result = NPioverL(L, power)
 	print("result: ", Decimal(result))
 	print("--- %s seconds --- for getting the result" % (time.time() - start_time))
 	print("timer end!")
