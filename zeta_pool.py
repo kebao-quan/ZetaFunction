@@ -191,7 +191,7 @@ def product(primeIndices,primeList):
 
 
 
-L = 10**8
+L = 10**10
 power = 2
 
 
